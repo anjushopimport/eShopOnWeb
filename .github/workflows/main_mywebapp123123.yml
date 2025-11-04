@@ -2,8 +2,7 @@ name: Build and deploy ASP app to Azure Web App - mywebapp123123
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -22,14 +21,15 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v1.0.5
 
-      - name: Restore NuGet packages
+      - name: Restore (solution)
         run: nuget restore eShopOnWeb.sln
 
-      - name: Build and publish to folder
+      # 🔑 Publish ONLY the Web app so docker-compose.dcproj never builds
+      - name: Build and publish Web project
         shell: pwsh
         run: |
           $publishDir = "published\"
-          msbuild "eShopOnWeb.sln" /nologo /verbosity:m "/t:Build;Publish" /p:Configuration=Release /p:PublishDir=$publishDir
+          msbuild "src\Web\Web.csproj" /restore /nologo /verbosity:m "/t:Build;Publish" /p:Configuration=Release /p:PublishDir=$publishDir
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -37,6 +37,7 @@ jobs:
           name: ASP-app
           path: published/**
 
+  # Optional: build Docker images on Linux (remove this job if you don't need containers)
   docker-publish:
     runs-on: ubuntu-latest
     needs: build
@@ -55,7 +56,7 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build Docker images
+      - name: Build Docker images (Linux host)
         run: |
           docker compose -f docker-compose.yml -f docker-compose.override.yml build --build-arg BUILD_CONFIGURATION=Release
 
@@ -71,6 +72,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ASP-app
+          path: ./published
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -80,11 +82,8 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FB6143731C1E45D099E4F08889BE573E }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'mywebapp123123'
           slot-name: 'Production'
-          package: .
-
-
+          package: ./published
