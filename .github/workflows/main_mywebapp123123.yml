@@ -29,7 +29,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool install --global dotnet-outdated-tool
-          dotnet outdated --upgrade --include-prerelease --ignore-failed-sources
+          dotnet-outdated --upgrade --allow-pre-release
 
       - name: Build and publish to folder
         shell: pwsh
@@ -92,3 +92,4 @@ jobs:
           app-name: 'mywebapp123123'
           slot-name: 'Production'
           package: .
+
