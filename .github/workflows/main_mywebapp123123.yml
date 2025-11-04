@@ -25,12 +25,6 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore eShopOnWeb.sln
 
-      - name: Update vulnerable packages
-        shell: pwsh
-        run: |
-          dotnet tool install --global dotnet-outdated-tool
-          dotnet-outdated --upgrade --allow-pre-release
-
       - name: Build and publish to folder
         shell: pwsh
         run: |
@@ -92,4 +86,5 @@ jobs:
           app-name: 'mywebapp123123'
           slot-name: 'Production'
           package: .
+
 
