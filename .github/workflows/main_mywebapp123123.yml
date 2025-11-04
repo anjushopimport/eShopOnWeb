@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ⚡ Cache NuGet global packages between runs
+      # ⚡ Cache NuGet packages between runs
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -36,13 +36,14 @@ jobs:
       - name: Restore (solution)
         run: nuget restore eShopOnWeb.sln
 
-      # ✅ Publish ONLY the Web project (avoid docker-compose.dcproj)
+      # ✅ Publish ONLY the Web project to a ROOT-level folder
       - name: Build and publish Web project
         shell: pwsh
         run: |
-          $publishDir = "published\"
-          msbuild "src\Web\Web.csproj" /restore /nologo /verbosity:m "/t:Build;Publish" /p:Configuration=Release /p:PublishDir=$publishDir
-          Get-ChildItem $publishDir -Recurse | Select-Object FullName | Out-Host
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "published"
+          msbuild "src\Web\Web.csproj" /restore /nologo /verbosity:m "/t:Build;Publish" /p:Configuration=Release "/p:PublishDir=$publishDir\"
+          # Optional: list published files for debugging
+          Get-ChildItem -Path $publishDir -Recurse | Select-Object FullName | Out-Host
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -60,7 +61,6 @@ jobs:
       contents: read
 
     steps:
-      # ⬇️ Download from THIS workflow run; don't set repository/run-id
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
