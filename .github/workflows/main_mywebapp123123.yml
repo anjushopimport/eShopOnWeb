@@ -13,9 +13,10 @@ jobs:
       contents: read # Required for actions/checkout
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup MSBuild path
+      - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Setup NuGet
@@ -25,7 +26,10 @@ jobs:
         run: nuget restore eShopOnWeb.sln
 
       - name: Build and publish to folder
-        run: msbuild eShopOnWeb.sln /nologo /verbosity:m /t:Build;Publish /p:PublishDir="published\" /p:Configuration=Release
+        shell: pwsh
+        run: |
+          $publishDir = "published\"
+          msbuild "eShopOnWeb.sln" /nologo /verbosity:m "/t:Build;Publish" /p:Configuration=Release /p:PublishDir=$publishDir
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -37,15 +41,15 @@ jobs:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write # Required for requesting the JWT
-      contents: read # Required for actions/checkout
+      id-token: write  # Required for requesting the JWT
+      contents: read   # Required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: ASP-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
